@@ -1,0 +1,3 @@
+#!/command/with-contenv sh
+echo "Starting soapysdr"
+exec /usr/local/bin/start-soapysdr.sh
