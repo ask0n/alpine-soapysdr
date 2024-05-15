@@ -1,3 +1,37 @@
+# Stage 1: Build stage using Alpine as the base image
+FROM alpine:latest as builder
+
+RUN apk update \
+ && apk add --no-cache \
+    librtlsdr-dev \
+    rtl-sdr \
+    git \
+    cmake \
+    make \
+    g++ \
+    soapy-sdr-dev \
+    hackrf-dev \
+    hackrf-libs
+
+# Build SoapyRTLSDR module
+RUN git clone https://github.com/pothosware/SoapyRTLSDR.git /SoapyRTLSDR \
+ && cd /SoapyRTLSDR \
+ && mkdir build \
+ && pwd \
+ && cd build \
+ && cmake .. \
+ && make \
+ && make install
+
+# Build SoapyHackRF module
+RUN  git clone https://github.com/pothosware/SoapyHackRF.git /SoapyHackRF \
+ && cd SoapyHackRF \
+ && mkdir build \
+ && cd build \
+ && cmake .. \
+ && make \
+ && make install
+
 FROM alpine:latest
 LABEL maintainer="ask0n <6883355+ask0n@users.noreply.github.com>"
 
@@ -14,10 +48,14 @@ RUN echo "@testing http://dl-cdn.alpinelinux.org/alpine/edge/testing" >> /etc/ap
     gosu@testing \
     soapy-sdr@testing \
     soapy-sdr-remote@testing \
-    supervisor@testing \
+    librtlsdr-dev \
+    hackrf-libs \
  && rm -rf /lib/apk/db/* \
  && mkdir -p /var/run/dbus \
  && addgroup -S soapysdr && adduser -S -G soapysdr soapysdr
+
+#Copy from builder
+COPY --from=builder /usr/local/lib/SoapySDR/modules0.8/* /usr/local/lib/SoapySDR/modules0.8/
 
 # Prepare your service scripts
 COPY ./s6-overlay/s6-rc.d /etc/s6-overlay/s6-rc.d
